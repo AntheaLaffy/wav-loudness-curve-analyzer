@@ -744,9 +744,7 @@ impl WavLufsApp {
         // 显式关闭调试功能，避免显示 ID 冲突的调试信息
 
         // 在 egui 0.27 中，该功能已移至 Context 上的 set_debug_on_hover 方法。
-        cc.egui_ctx.style_mut(|style| {
-            style.debug.debug_on_hover = false; // 使用您提供的文档中正确的字段
-        });
+
 
         let logger = Logger::new();
         log_info(&logger, "✅ 应用启动成功。");
@@ -1188,14 +1186,33 @@ impl WavLufsApp {
                         if let Some(path) = FileDialog::new().add_filter("Audio", &["wav", "csv"]).pick_file() {
                             let file_slot = 'A'; // 定义插槽
                             let filename = path.file_name().unwrap().to_string_lossy().to_string();
-                            let _task_name = format!("Track {} Load: {}", file_slot, filename);
-                            let _logger_ref = &self.logger;
-                            let _ui_result_tx_base = self.ui_tx.clone();
+                            let task_name = format!("Track {} Load: {}", file_slot, filename);
+                            let logger_ref = &self.logger;
+                            let ui_result_tx_base = self.ui_tx.clone();
 
                             self.loading = true; // 增加 loading 状态
                             self.error_msg = None;
 
-
+                            // 启动后台加载任务
+                            self.worker_pool.spawn_task(
+                                task_name,
+                                move |task_id, ui_tx_clone, logger_entries| {
+                                    let thread_logger = Logger { entries: logger_entries };
+                                    match load_file(path, &thread_logger) {
+                                        Ok(curve) => {
+                                            // 发送结果和插槽信息
+                                            ui_tx_clone.send(WorkerMessage::NewCurve(curve, Some(file_slot))).unwrap_or_default();
+                                            ui_tx_clone.send(WorkerMessage::UpdateTaskState(task_id, TaskState::Completed)).unwrap_or_default();
+                                        }
+                                        Err(e) => {
+                                            let err_msg = format!("文件加载失败 ({}): {}", filename, e);
+                                            ui_tx_clone.send(WorkerMessage::UpdateTaskState(task_id, TaskState::Error(err_msg))).unwrap_or_default();
+                                        }
+                                    }
+                                },
+                                ui_result_tx_base,
+                                logger_ref
+                            );
                         }
                     }
                 });
