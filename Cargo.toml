@@ -1,0 +1,16 @@
+[package]
+name = "wav_lufs_curve"
+version = "1.0.0" # <--- 1. 自定义版本号：改为 1.0.0
+edition = "2024"
+authors = ["Kisaragi Fuurin <nicolesandwich@outlook.com>"] # 推荐添加
+description = "WAV Loudness Curve Analyzer and A/B Comparison Tool" # 推荐添加
+
+# --- 依赖部分 ---
+[dependencies]
+eframe = "0.33.2"
+egui = "0.33.2"
+egui_plot = "0.34.0"
+hound = "3.5"
+rfd = "0.16.0"
+csv = "1.1"
+chrono = "0.4" # 用于日志时间戳
