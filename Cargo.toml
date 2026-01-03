@@ -14,3 +14,4 @@ hound = "3.5"
 rfd = "0.16.0"
 csv = "1.1"
 chrono = "0.4" # 用于日志时间戳
+rodio = { version = "0.20", features = ["symphonia-all"] } # 音频播放器
